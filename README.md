@@ -1,7 +1,7 @@
-# EspSerialPassthrough
+# EspSerialPassthrough v1.0
 ESP8266 / ESP-01 Serial Passthrough for serial console or flashing using Arduino SAMD MCU
 
-This Arduino sketch allows you to send AT commands, watch bootloader messages or flash on an ESP-01/ESP8266 through a SAMD21/SAMD51 or similar MCU. 
+This Arduino sketch allows you to send AT commands, watch bootloader messages or flash an ESP-01/ESP8266 through a SAMD21/SAMD51 or similar MCU. 
 The MCU should be operating at 3.3V, if not, voltage level shifters must be used on the connections to ESP.
 The program might also work on other ESPs, but have only been tested with ESP8266 in the form of a ESP-01 board.
 
