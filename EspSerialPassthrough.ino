@@ -304,6 +304,7 @@ void lookForEspFlashReset() {
 }
 
 static byte flashCommandInspectBuffer[32];
+static byte baudBuffer[4];
 
 void lookForEspFlashCommandsWhilePassingTraffic(int bytesAvailableFromPc) {
   if (enterFlashingMode && passthroughMode != FlashingMode) {
@@ -324,7 +325,12 @@ void lookForEspFlashCommandsWhilePassingTraffic(int bytesAvailableFromPc) {
         }
         else if (flashCommandInspectBuffer[2] == ESP_CHANGE_BAUDRATE && bytesRead > 12) {
           // self.command(self.ESP_CHANGE_BAUDRATE, struct.pack('<II', baud, second_arg))
-          uint32_t baudrate = flashCommandInspectBuffer[9] | (flashCommandInspectBuffer[10] << 8) | (flashCommandInspectBuffer[11] << 16);
+          // If baudrate contains SLIP escaping, it must be unescaped first: 0xdb,0xdc=>0xc0 0xdb,0xdd=>0xdb
+          for (int bbi = 0, fcib = 9; bbi < 4; bbi++, fcib++) {
+            byte b = flashCommandInspectBuffer[fcib];
+            baudBuffer[bbi] = (b == 0xdb ? (flashCommandInspectBuffer[++fcib] == 0xdc ? 0xc0 : 0xdb) : b);
+          }
+          uint32_t baudrate = baudBuffer[0] | (baudBuffer[1] << 8) | (baudBuffer[2] << 16) | (baudBuffer[3] << 24);
           esp8266.write(flashCommandInspectBuffer, bytesRead);
           int idx = 0;
           int slipEndCount = 0;
