@@ -1,0 +1,7 @@
+
+#Ignore files built by Visual Studio/Visual Micro
+[Dd]ebug*/
+[Rr]elease*/
+.vs/
+__vm/
+*.vcxproj.user

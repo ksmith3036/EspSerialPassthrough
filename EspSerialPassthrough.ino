@@ -1,5 +1,8 @@
 ﻿/*
-   This sketch allows you to send AT commands, watch bootloader messages or flash on an ESP-01/ESP8266 through a SAMD21/SAMD51 or similar MCU. 
+   EspSerialPassthrough v1.0
+   ESP8266 / ESP-01 Serial Passthrough for flashing using Arduino SAMD MCU
+
+   This Arduino sketch allows you to send AT commands, watch bootloader messages, or flash on an ESP-01/ESP8266 through a SAMD21/SAMD51 or similar MCU. 
    The MCU should be operating at 3.3V, if not, voltage level shifters must be used on the connections to ESP.
    The program might also work on other ESPs, but have only been tested with ESP8266 in the form of a ESP-01 board.
    
@@ -10,7 +13,6 @@
    The same goes for watching bootloader output.
    Firmware upgrade/flashing has been done with the official ESP8266 Flash Download Tool from https://www.espressif.com/en/support/download/other-tools, 
    with firmware downloaded from https://www.espressif.com/en/support/download/at
-
 
   Copyright 2021 Kåre Smith (Kaare Smith)
 
@@ -48,7 +50,7 @@
 // This controls baudrate and how the pins on the ESP8266 is set
 #ifndef PASSTHROUGH_MODE
   #ifdef HAVE_NATIVEUSB
-    #define PASSTHROUGH_MODE AutoMode  // Automatic switch 
+    #define PASSTHROUGH_MODE AutoMode  // Automatic switch between modes
   #else
   // If not native USB: default to AtCommandsMode
     #define PASSTHROUGH_MODE AtCommandsMode
@@ -146,10 +148,11 @@ void setup() {
     switchBaudRateMillis = millis() + 2000; 
 
     if (passthroughMode == FlashingMode) {
+      // Wait for serial port to PC opens
       while (!isSerialOpen());
     }
     else {
-      // Wait for serial connection, buffer up up bootloader messages while waiting
+      // Wait for serial connection, while buffering up bootloader messages
       size_t fromEspBufferIndex = 0;
       while (!isSerialOpen()) {
         switchBaudRateAfterTimeout(isSerialOpen());
@@ -172,6 +175,7 @@ void setup() {
   chPdPin = chPdPinBefore = true;
 }
 
+// Might have to break up writes into several writes, because of serial buffer size
 inline void writeEspBufferToSerial(byte *fromEspBuffer, size_t bytesToWrite, bool delayed) {
   size_t writeIndex = 0;
   if (bytesToWrite > 0 && delayed) {
@@ -186,7 +190,6 @@ inline void writeEspBufferToSerial(byte *fromEspBuffer, size_t bytesToWrite, boo
 }
 
 static bool enterFlashingMode = false;
-
 static int enterFlashingModeState = 0;
 
 static size_t bytesFromEsp;
@@ -202,8 +205,8 @@ void esp8266_begin(uint32_t baud) {
   }
 }
 
+// Two seconds after serial connect, switch to normal (115200) baud, if started in bootloader baud
 inline void switchBaudRateAfterTimeout(bool writeSerial) {
-  // After two seconds after serial connect, switch to normal (115200) baud, if started in bootlader baud
   if (!enterFlashingMode && espBaudrateSet == BOOTLOADER_BAUD && espBaudrateSet != espBaud && millis() > switchBaudRateMillis) {
     if (writeSerial) {
       Serial.println();
@@ -214,22 +217,16 @@ inline void switchBaudRateAfterTimeout(bool writeSerial) {
   }
 }
 
+// Main loop
 void loop() {
   bytesAvailableFromEsp = esp8266.available();
   if (bytesAvailableFromEsp) {
     bytesFromEsp = esp8266.readBytes(fromEspBuffer, bytesAvailableFromEsp < sizeof(fromEspBuffer) ? bytesAvailableFromEsp : sizeof(fromEspBuffer));
-    if (bytesFromEsp > 0) {
-      // Might have to break up writes into several writes, because of buffer size
-      if (bytesFromEsp <= SERIAL_WRITE_BUFFER_SIZE) {
-        Serial.write(fromEspBuffer, bytesFromEsp);
-      }
-      else {
-        writeEspBufferToSerial(fromEspBuffer, bytesFromEsp, false);
-      }
-    }
+    // Might have to break up writes into several writes, because of serial buffer size
+    writeEspBufferToSerial(fromEspBuffer, bytesFromEsp, false);
   }
 
-  // After two seconds after serial connect, switch to normal (115200) baud, if started in bootlader baud
+  // Two seconds after serial connect, switch to normal (115200) baud, if started in bootloader baud
   switchBaudRateAfterTimeout(true);
 
 #ifdef HAVE_NATIVEUSB
@@ -332,7 +329,7 @@ void lookForEspFlashCommandsWhilePassingTraffic(int bytesAvailableFromPc) {
           int idx = 0;
           int slipEndCount = 0;
           byte b = 0;
-          unsigned long millisWait = millis() + 200;
+          unsigned long millisWait = millis() + 300;
           // Buffer response from ESP
           while (slipEndCount < 2 && millis() < millisWait) {
             while (esp8266.available() && idx < sizeof(fromEspBuffer)) {
@@ -343,7 +340,9 @@ void lookForEspFlashCommandsWhilePassingTraffic(int bytesAvailableFromPc) {
           }
           // Switch baud rate
           esp8266_begin(baudrate);
-          // Return response to PC
+          // Give the ESP serial port time to settle
+          delay(500);
+          // Return response to PC, so the flash downloader continues
           Serial.write(fromEspBuffer, idx);
           return;
         }
