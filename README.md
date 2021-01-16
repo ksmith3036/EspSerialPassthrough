@@ -17,6 +17,7 @@ The same goes for watching bootloader output.
 Firmware upgrade/flashing has been done with the official ESP8266 Flash Download Tool from https://www.espressif.com/en/support/download/other-tools, 
 with firmware downloaded from https://www.espressif.com/en/support/download/at.
 
+&nbsp;
 
 Copyright 2021 Kåre Smith (Kaare Smith)
 
@@ -24,7 +25,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-&nbsp;&nbsp;http://www.apache.org/licenses/LICENSE-2.0
+&nbsp;&nbsp;&nbsp;http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
