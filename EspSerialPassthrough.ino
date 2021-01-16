@@ -57,7 +57,7 @@
   #endif
 #endif
 
-// AutoMode is only for devices with native USB, like Arduino Zero, Arduino MKR and compatibles (SAMD21/SAMD51 MCU). 
+// AutoMode is only for devices with native USB, like Arduino Zero, Arduino MKR and compatibles (SAMD21/SAMD51 MCU), since DTR and RTS signals is vital.
 // In AutoMode, baud rate switching is supported using the ESP flash tool, hence on a SAMD21, flashing can be done at speeds up to 1500000 (1.5Mbit/s).
 // In FlashingMode, a fixed baudrate is used to the ESP, and the ESP flash download tool MUTS be set to the same baud rate.
 
