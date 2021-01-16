@@ -1,5 +1,5 @@
 # Flash ESP8266 using Arduino with native USB
-##EspSerialPassthrough v1.0
+## EspSerialPassthrough v1.0
 
 ESP8266 / ESP-01 Serial Passthrough for serial console or flashing, using Arduino with SAMD MCU.
 
