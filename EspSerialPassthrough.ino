@@ -1,75 +1,15 @@
-#ifdef SERIAL_PORT_USBVIRTUAL
-#define HAVE_NATIVEUSB
-#define SERIAL_WRITE_BUFFER_SIZE 16384
-#else
-#define SERIAL_WRITE_BUFFER_SIZE 64
-#endif
+#include "config.h"
 
-// Baud rates used for ESP8266 Serial port
-#define BOOTLOADER_BAUD 74880 // Used when ESP8266 is in bootloader, for instance crashing after a failed flash of firmware, and in the first second or two after boot
-#define AT_MODE_BAUD 115200 // Used when in AT command mode (I have read that some ESP8266 use 9600 baud in AT mode...)
-#define FLASH_MODE_BAUD 115200 // Used when in firmware flashing mode 
-
-// Set PASSTHROUGH_MODE to AutoMode, AtCommandsMode, BootloaderMode or FlashingMode
-//#define PASSTHROUGH_MODE AtCommandsMode   
-//#define PASSTHROUGH_MODE BootloaderMode
-//#define PASSTHROUGH_MODE FlashingMode
-// This controls baudrate and how the pins on the ESP8266 is set
-#ifndef PASSTHROUGH_MODE
-  #ifdef HAVE_NATIVEUSB
-    #define PASSTHROUGH_MODE AutoMode  // Automatic switch between modes
-  #else
-  // If not native USB: default to AtCommandsMode
-    #define PASSTHROUGH_MODE AtCommandsMode
-  #endif
-#endif
-
-// AutoMode is only for devices with native USB, like Arduino Zero, Arduino MKR and compatibles (SAMD21/SAMD51 MCU), since DTR and RTS signals is vital.
-// In AutoMode, baud rate switching is supported using the ESP flash tool, hence on a SAMD21, flashing can be done at speeds up to 1500000 (1.5Mbit/s).
-// In FlashingMode, a fixed baudrate is used to the ESP, and the ESP flash download tool MUTS be set to the same baud rate.
-
-// If serial port on MCU used to connect to PC (even if connecting through a USB serial adapter):
-//   It is best that USB baud towards PC matches the baudrate of the ESP8266, but when using it to see bootloader messages or test AT commands this isn't important
-//   since the serial buffers will not overflow. Having a fixed baudrate to the PC, makes it easier by not having to change baudrate in Putty (or other terminal emulator).
-//   When flashing ESP8266 firmware, it could be more important that the baudrate from PC to MCU is equal to the baudrate used from the MCU to the ESP8266. 
 // Native USB connection to PC: 
 //   If using a Arduino board with native USB, like Arduino Zero or MKR series, the baud rate isn't important, since virtual serial transfers is at the native USB bus speed. 
 unsigned long pcUsbBaud = 115200;  
 
-
-enum PassthroughMode {
-   AtCommandsMode // Locked to AT mode
-  ,BootloaderMode // Locked to bootloader mode
-  ,FlashingMode   // Locked to flashing mode
-#ifdef HAVE_NATIVEUSB
-  ,AutoMode       // Start in AT command mode, but enter flash mode, if esptool/espressif flash download tool connects.
-#endif
-};
-// In Auto mode, USB serial DTR and RTS is controlling GPIO0 and CH_PD (EN) pins om ESP.
 
 // Set Passthrough mode from defined mode
 PassthroughMode passthroughMode = PASSTHROUGH_MODE;
 
 // Sets ESP baudrate to AT_MODE_BAUD, BOOTLOADER_BAUD or FLASH_MODE_BAUD according to mode.
 uint32_t espBaud = passthroughMode == AtCommandsMode ? AT_MODE_BAUD : passthroughMode == BootloaderMode ? BOOTLOADER_BAUD : FLASH_MODE_BAUD;
-
-// Serial1 is the physical serial port on the Arduino MKR series boards (and compatible boards)
-#define esp8266 Serial1
-
-// The pin used on the Arduino board. Important: must be 3.3V GPIO pins, or use voltage level shifter
-#define CH_PD_PIN 27  // Arduino pin connected to CH_PD (sometimes marked EN) pin on ESP8266
-#define GPIO0_PIN 4  // Arduino pin connected to GPIO0 pin on ESP8266
-#define RESET_PIN 7 // Arduino pin connected to RESET pin on ESP8266
-// Arduino GND is connected to ESP GND
-// Arduino VCC (3.3V) is connected to ESP8266 3V3
-// Arduino TX is connected to ESP8266 RX
-// Arduino RX is connected to ESP8266 TX
-// ESP8266 GPIO2 is left unconnected
-
-// Definitions from ESP flashing tool esptool.py
-#define SLIP_END 0xC0
-#define ESP_SYNC 0x08
-#define ESP_CHANGE_BAUDRATE 0x0F
 
 static bool gpio0Pin = true;
 static bool gpio0PinBefore = true;
@@ -427,68 +367,3 @@ void enterAtMode() {
   delay(300);
   digitalWrite(CH_PD_PIN, HIGH);
 }
-
-/*
-// List version information
-AT+GMR
-AT version:1.1.0.0(May 11 2016 18:09:56)
-SDK version:1.5.4(baaeaebb)
-compile time:May 20 2016 15:08:19
-OK
-
-// After upgrade:
-AT+GMR
-AT version:1.7.4.0(May 11 2020 19:13:04)
-SDK version:3.0.4(9532ceb)
-compile time:May 27 2020 10:12:17
-Bin version(Wroom 02):1.7.4
-OK
-
-
-// List mode: 1 = Station mode, 2 = Access point mode, 3 = Both station and access point
-AT+CWMODE?
-+CWMODE:2
-
-OK
-
-// Set combined accesspoint and station (client) mode
-AT+CWMODE=3
-
-OK
-// List networks
-AT+CWLAP
-
-AT+CWLAP
-+CWLAP:(3,"Get-2G-A4948D",-87,"98:1e:19:a4:94:92",1,-26,0)
-+CWLAP:(4,"Lars_Anette",-84,"70:b1:4e:7d:26:d9",1,-46,0)
-+CWLAP:(3,"DIRECT-53-HP M281 LaserJet",-42,"2e:6f:c9:46:3d:53",6,-32,0)
-+CWLAP:(3,"HP-Print-7C-Officejet Pro 6830",-85,"64:51:06:ba:ad:7c",6,-21,0)
-+CWLAP:(3,"SMITH",-36,"58:cb:52:b9:7f:bc",6,0,0)
-+CWLAP:(3,"SMITHX",-35,"5a:cb:52:b9:7f:bc",6,0,0)
-+CWLAP:(3,"Ryums vei",-86,"f0:72:ea:4f:40:42",6,0,0)
-+CWLAP:(3,"skynet",-80,"88:41:fc:ab:88:d7",6,-17,0)
-+CWLAP:(3,"MaxVirus 2",-83,"98:1e:19:a3:9c:58",11,-17,0)
-+CWLAP:(3,"NTGR_VMB_3127449426",-88,"a4:11:62:5a:cb:d2",11,-12,0)
-+CWLAP:(3,"SMITH",-63,"58:cb:52:b9:77:66",11,-4,0)
-+CWLAP:(3,"SMITHX",-63,"5a:cb:52:b9:77:64",11,-4,0)
-+CWLAP:(3,"skynet",-85,"88:41:fc:ab:88:d3",11,-29,0)
-
-
-//Bootloader messages (will vary with firmware version and ESP-variant):
- ets Jan  8 2013,rst cause:4, boot mode:(3,7)
-
-wdt reset
-load 0x40100000, len 27728, room 16
-tail 0
-chksum 0x2a
-load 0x3ffe8000, len 2124, room 8
-tail 4
-chksum 0x07
-load 0x3ffe8850, len 9276, room 4
-tail 8
-chksum 0xba
-csum 0xba
-�rlL�
-ready
-
-*/
