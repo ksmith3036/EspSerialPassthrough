@@ -23,16 +23,17 @@ See guide in [Wiki](https://github.com/ksmith3036/EspSerialPassthrough/wiki/)
 
 ### Wiring
 
-Arduino GND is connected to ESP GND
-Arduino VCC (3.3V) is connected to ESP8266 3V3
-Arduino TX is connected to ESP8266 RX
-Arduino RX is connected to ESP8266 TX
-ESP8266 GPIO2 is left unconnected
+- Arduino GND is connected to ESP GND
+- Arduino VCC (3.3V) is connected to ESP8266 3V3
+- Arduino TX is connected to ESP8266 RX
+- Arduino RX is connected to ESP8266 TX
+- ESP8266 GPIO2 is left unconnected
 
 Select the EN, RESET and BOOT pins using the config header file:
-CH_PD_PIN connected to ESP EN
-GPIO0_PIN connected to ESP BOOT
-RESET_PIN connected to ESP RST
+
+- CH_PD_PIN connected to ESP EN
+- GPIO0_PIN connected to ESP BOOT
+- RESET_PIN connected to ESP RST
 
 ### AT test
 
